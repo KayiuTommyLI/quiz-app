@@ -1,9 +1,3 @@
-KayiuTommyLI: Read those folder, and try to understand what the code doing
-
-Workspace: Collecting workspace informationLooking at your quiz application, I can see it's a full-stack system for creating and taking interview preparation quizzes. Here's what the code does:
-
-## Overall Architecture
-
 This is a **React + Node.js quiz application** with the following structure:
 
 ### Frontend (client/src/App.jsx)
