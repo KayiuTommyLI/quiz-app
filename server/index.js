@@ -361,7 +361,8 @@ Here is the text:\n\n---\n\n`;
           message: `Added ${actuallyNewQuestions.length} new questions to ${topicId}. Total: ${allQuestions.length} questions${newQuestions.length - actuallyNewQuestions.length > 0 ? ` (${newQuestions.length - actuallyNewQuestions.length} duplicates removed)` : ''}`, 
           questions: allQuestions.length,
           newQuestions: actuallyNewQuestions.length,
-          duplicatesRemoved: newQuestions.length - actuallyNewQuestions.length
+          duplicatesRemoved: newQuestions.length - actuallyNewQuestions.length,
+          modelUsed: getGeminiModel() // Add this line
         });
         
       } catch (parseError) {
@@ -472,6 +473,25 @@ const selectQuestionsWithWeights = (questions, stats, count) => {
   }
 
   return selectedQuestions;
+};
+
+// Add this function for validation
+const SUPPORTED_MODELS = [
+  'gemini-2.5-pro',
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-lite'
+];
+
+const getGeminiModel = () => {
+  const model = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
+  
+  if (!SUPPORTED_MODELS.includes(model)) {
+    console.warn(`Warning: Model '${model}' may not be supported. Using default: ${DEFAULT_GEMINI_MODEL}`);
+    return DEFAULT_GEMINI_MODEL;
+  }
+  
+  console.log(`Using Gemini model: ${model}`);
+  return model;
 };
 
 app.listen(port, () => {
