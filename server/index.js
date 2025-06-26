@@ -23,6 +23,26 @@ const createQuestionId = (questionText) => {
   return crypto.createHash('sha256').update(questionText).digest('hex');
 };
 
+const shuffleArray = (array) => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
+const shuffleQuestionOptions = (question) => {
+  const correctAnswer = question.answer;
+  const shuffledOptions = shuffleArray(question.options);
+  
+  return {
+    ...question,
+    options: shuffledOptions,
+    answer: correctAnswer // Keep the correct answer text, not position
+  };
+};
+
 app.post('/api/quizzes', async (req, res) => {
   if (!process.env.GEMINI_API_KEY) {
     return res.status(500).send('Server configuration error: Missing API Key.');
@@ -46,7 +66,21 @@ app.post('/api/quizzes', async (req, res) => {
     return res.status(400).send('No study materials (.txt or .pdf) found.');
   }
 
-  const promptInstructions = `Based on the following text, generate 10 multiple choice questions and answers in a valid JSON array format. Each object should have "question", "options", "answer", and "explanation" keys. Here is the text:\n\n---\n\n`;
+  // Update the prompt to be more specific about generating different questions
+  const promptInstructions = `Based on the following text, generate 10 NEW and DIFFERENT multiple choice questions and answers in a valid JSON array format. 
+
+IMPORTANT: Make these questions UNIQUE and cover DIFFERENT aspects, concepts, and details from the material. Focus on:
+- Different technical concepts
+- Various implementation details  
+- Different scenarios and use cases
+- Alternative approaches mentioned
+- Specific examples and edge cases
+
+Each object should have "question", "options", "answer", and "explanation" keys.
+
+Current timestamp for uniqueness: ${Date.now()}
+
+Here is the text:\n\n---\n\n`;
   const fullInput = promptInstructions + combinedContent;
   const tempFilePath = path.join(os.tmpdir(), `gemini-prompt-${Date.now()}.txt`);
   fs.writeFileSync(tempFilePath, fullInput, 'utf-8');
@@ -103,7 +137,8 @@ app.get('/api/quizzes/all', (req, res) => {
       for (let j = 0; j < questionPool.length; j++) {
         randomWeight -= questionPool[j].weight;
         if (randomWeight <= 0) {
-          quizQuestions.push(questionPool[j]);
+          // Shuffle options before adding to quiz
+          quizQuestions.push(shuffleQuestionOptions(questionPool[j]));
           questionPool.splice(j, 1);
           break;
         }
@@ -201,6 +236,243 @@ app.post('/api/stats', (req, res) => {
     res.status(200).send('Stats updated successfully.');
 });
 
+// Generate quiz for specific topic
+app.post('/api/quizzes/:topicId', async (req, res) => {
+  const { topicId } = req.params;
+  
+  if (!process.env.GEMINI_API_KEY) {
+    return res.status(500).json({ message: 'Server configuration error: Missing API Key.' });
+  }
+  
+  try {
+    const topicPath = path.join(__dirname, '..', 'study_materials', topicId);
+    if (!fs.existsSync(topicPath)) {
+      return res.status(404).json({ message: 'Topic not found' });
+    }
+    
+    // Read all files in the topic directory
+    const files = fs.readdirSync(topicPath);
+    let combinedContent = '';
+    
+    for (const file of files) {
+      const filePath = path.join(topicPath, file);
+      const ext = path.extname(file).toLowerCase();
+      
+      if (ext === '.txt') {
+        combinedContent += fs.readFileSync(filePath, 'utf8') + '\n\n';
+      } else if (ext === '.pdf') {
+        try {
+          const data = await pdf(fs.readFileSync(filePath));
+          combinedContent += data.text + '\n\n';
+        } catch (pdfError) {
+          console.log(`Error reading PDF ${file}:`, pdfError.message);
+        }
+      }
+    }
+    
+    if (!combinedContent.trim()) {
+      return res.status(400).json({ message: 'No readable content found in topic folder' });
+    }
+    
+    const promptInstructions = `Based on the following text, generate 10 NEW and DIFFERENT multiple choice questions and answers in a valid JSON array format. 
+
+IMPORTANT: Make these questions UNIQUE and cover DIFFERENT aspects, concepts, and details from the material. Focus on:
+- Different technical concepts
+- Various implementation details  
+- Different scenarios and use cases
+- Alternative approaches mentioned
+- Specific examples and edge cases
+
+Each object should have "question", "options", "answer", and "explanation" keys.
+
+Current timestamp for uniqueness: ${Date.now()}
+
+Here is the text:\n\n---\n\n`;
+    const fullInput = promptInstructions + combinedContent;
+    
+    const tempFilePath = path.join(os.tmpdir(), `gemini-prompt-${Date.now()}.txt`);
+    fs.writeFileSync(tempFilePath, fullInput, 'utf-8');
+    const command = `gemini --model gemini-2.0-flash < "${tempFilePath}"`;
+    
+    exec(command, { maxBuffer: 1024 * 1024 * 10, env: process.env }, (error, stdout, stderr) => {
+      fs.unlinkSync(tempFilePath);
+      
+      if (error) {
+        console.error('Gemini CLI error:', stderr);
+        
+        // Handle rate limit specifically
+        if (stderr.includes('429') || stderr.includes('Resource has been exhausted')) {
+          return res.status(429).json({ 
+            message: 'API rate limit exceeded. Please wait a few minutes before trying again. Consider using a smaller amount of study material or waiting for your quota to reset.' 
+          });
+        }
+        
+        return res.status(500).json({ message: `Failed to execute Gemini CLI. Error: ${stderr}` });
+      }
+      
+      try {
+        const jsonResponse = stdout.substring(stdout.indexOf('['), stdout.lastIndexOf(']') + 1);
+        const newQuestions = JSON.parse(jsonResponse);
+        
+        console.log(`Generated ${newQuestions.length} new questions from Gemini`);
+        
+        const outputPath = path.join(__dirname, '..', 'quizzes', `${topicId}-quiz.json`);
+        
+        // Check if file exists and merge questions instead of overwriting
+        let existingQuestions = [];
+        if (fs.existsSync(outputPath)) {
+          try {
+            existingQuestions = JSON.parse(fs.readFileSync(outputPath, 'utf8'));
+            console.log(`Found ${existingQuestions.length} existing questions`);
+          } catch (e) {
+            console.log('Error reading existing quiz file, starting fresh:', e.message);
+            existingQuestions = [];
+          }
+        }
+        
+        // Add debugging for duplicate detection
+        console.log('Checking for duplicates...');
+        const existingHashes = new Set();
+        existingQuestions.forEach(q => {
+          const hash = createQuestionId(q.question);
+          existingHashes.add(hash);
+        });
+        
+        let actuallyNewQuestions = [];
+        newQuestions.forEach(q => {
+          const hash = createQuestionId(q.question);
+          if (!existingHashes.has(hash)) {
+            actuallyNewQuestions.push(q);
+            existingHashes.add(hash);
+          } else {
+            console.log(`Duplicate detected: "${q.question.substring(0, 50)}..."`);
+          }
+        });
+        
+        console.log(`${actuallyNewQuestions.length} questions are actually new`);
+        
+        // Combine existing and new questions
+        const allQuestions = [...existingQuestions, ...actuallyNewQuestions];
+        
+        // Save the combined questions
+        fs.writeFileSync(outputPath, JSON.stringify(allQuestions, null, 2));
+        
+        res.json({ 
+          message: `Added ${actuallyNewQuestions.length} new questions to ${topicId}. Total: ${allQuestions.length} questions${newQuestions.length - actuallyNewQuestions.length > 0 ? ` (${newQuestions.length - actuallyNewQuestions.length} duplicates removed)` : ''}`, 
+          questions: allQuestions.length,
+          newQuestions: actuallyNewQuestions.length,
+          duplicatesRemoved: newQuestions.length - actuallyNewQuestions.length
+        });
+        
+      } catch (parseError) {
+        console.error('Parse error:', parseError);
+        console.error('Gemini output:', stdout);
+        res.status(500).json({ message: 'Failed to parse or save the quiz from Gemini response.' });
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error generating topic quiz:', error);
+    res.status(500).json({ message: 'Failed to generate quiz: ' + error.message });
+  }
+});
+
+// Get quiz questions for specific topic
+app.get('/api/quizzes/:topicId', (req, res) => {
+  const { topicId } = req.params;
+  
+  try {
+    // FIX: Use the correct path
+    const quizPath = path.join(__dirname, '..', 'quizzes', `${topicId}-quiz.json`);
+    if (!fs.existsSync(quizPath)) {
+      return res.status(404).json({ message: 'No quiz found for this topic' });
+    }
+    
+    const quizData = JSON.parse(fs.readFileSync(quizPath, 'utf8'));
+    
+    // Apply smart review logic here too
+    const statsPath = path.join(__dirname, '..', 'quizzes', 'stats.json');
+    let stats = {};
+    if (fs.existsSync(statsPath)) {
+      stats = JSON.parse(fs.readFileSync(statsPath, 'utf8'));
+    }
+    
+    // Select and shuffle questions
+    const selectedQuestions = selectQuestionsWithWeights(quizData, stats, 10)
+      .map(q => shuffleQuestionOptions(q));
+    
+    res.json(selectedQuestions);
+    
+  } catch (error) {
+    console.error('Error getting topic quiz:', error);
+    res.status(500).json({ message: 'Failed to get quiz' });
+  }
+});
+
+// Also fix the topics endpoint to count questions correctly
+app.get('/api/topics', (req, res) => {
+  try {
+    const studyMaterialsPath = path.join(__dirname, '..', 'study_materials');
+    if (!fs.existsSync(studyMaterialsPath)) {
+      return res.json([]);
+    }
+    
+    const topics = fs.readdirSync(studyMaterialsPath, { withFileTypes: true })
+      .filter(dirent => dirent.isDirectory())
+      .map(dirent => ({
+        id: dirent.name,
+        name: dirent.name.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        questionCount: 0 // Will be populated below
+      }));
+    
+    // Count questions for each topic - FIX: Use correct path
+    topics.forEach(topic => {
+      const topicQuizPath = path.join(__dirname, '..', 'quizzes', `${topic.id}-quiz.json`);
+      if (fs.existsSync(topicQuizPath)) {
+        try {
+          const quizData = JSON.parse(fs.readFileSync(topicQuizPath, 'utf8'));
+          topic.questionCount = quizData.length || 0; // FIX: quizData is an array, not an object with questions property
+        } catch (e) {
+          topic.questionCount = 0;
+        }
+      }
+    });
+    
+    res.json(topics);
+  } catch (error) {
+    console.error('Error getting topics:', error);
+    res.status(500).json({ message: 'Failed to get topics' });
+  }
+});
+
+// Add this function (it was referenced but missing)
+const selectQuestionsWithWeights = (questions, stats, count) => {
+  let questionPool = questions.map(q => {
+    const id = createQuestionId(q.question);
+    const qStats = stats[id] || { correct: 0, incorrect: 0, seen: 0 };
+    const weight = 1 + (qStats.incorrect * 2) - (qStats.correct * 0.5) + (1 / (qStats.seen + 1));
+    return { ...q, weight: Math.max(0.1, weight) };
+  });
+
+  const selectedQuestions = [];
+  const quizSize = Math.min(count, questionPool.length);
+
+  for (let i = 0; i < quizSize; i++) {
+    const totalWeight = questionPool.reduce((sum, q) => sum + q.weight, 0);
+    let randomWeight = Math.random() * totalWeight;
+    
+    for (let j = 0; j < questionPool.length; j++) {
+      randomWeight -= questionPool[j].weight;
+      if (randomWeight <= 0) {
+        selectedQuestions.push(questionPool[j]);
+        questionPool.splice(j, 1);
+        break;
+      }
+    }
+  }
+
+  return selectedQuestions;
+};
 
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);
