@@ -1,0 +1,299 @@
+[
+  {
+    "question": "What is the primary goal of the 'Delivery Framework' in system design interviews?",
+    "options": [
+      "To impress the interviewer with your knowledge of advanced concepts.",
+      "To deliver a working system design within the allotted time.",
+      "To demonstrate your ability to perform complex calculations.",
+      "To list as many features as possible for the system."
+    ],
+    "answer": "To deliver a working system design within the allotted time.",
+    "explanation": "The 'Delivery Framework' focuses on structuring your interview to ensure you deliver a functional system, which is a key factor in passing system design interviews."
+  },
+  {
+    "question": "What are the two main categories of requirements you should define in the requirements section?",
+    "options": [
+      "Technical and Non-Technical Requirements",
+      "Functional and Non-Functional Requirements",
+      "Scalable and Reliable Requirements",
+      "Consistent and Available Requirements"
+    ],
+    "answer": "Functional and Non-Functional Requirements",
+    "explanation": "The requirements section should be broken down into Functional Requirements (what the system should do) and Non-Functional Requirements (system qualities)."
+  },
+  {
+    "question": "Which of the following is an example of a functional requirement for a system like Twitter?",
+    "options": [
+      "The system should be highly available.",
+      "Users should be able to post tweets.",
+      "The system should be low latency.",
+      "The system should scale to support 100M+ DAUs."
+    ],
+    "answer": "Users should be able to post tweets.",
+    "explanation": "Functional requirements describe the core features of the system, such as the ability for users to post tweets."
+  },
+  {
+    "question": "Which of the following is an example of a non-functional requirement for a system like Twitter?",
+    "options": [
+      "Users should be able to post tweets.",
+      "Users should be able to follow other users.",
+      "The system should be highly available, prioritizing availability over consistency.",
+      "Users should be able to see tweets from users they follow."
+    ],
+    "answer": "The system should be highly available, prioritizing availability over consistency.",
+    "explanation": "Non-functional requirements describe the qualities of the system, such as availability, scalability, and latency."
+  },
+  {
+    "question": "According to the text, when should you perform capacity estimation in a system design interview?",
+    "options": [
+      "Always, as the first step.",
+      "Only if the calculations will directly influence your design.",
+      "Only if the interviewer specifically asks for it.",
+      "Always, to demonstrate your arithmetic skills."
+    ],
+    "answer": "Only if the calculations will directly influence your design.",
+    "explanation": "The text suggests skipping upfront estimations unless they are necessary for making design decisions."
+  },
+  {
+    "question": "What is the purpose of identifying core entities in a system design?",
+    "options": [
+      "To impress the interviewer with your vocabulary.",
+      "To define terms, understand the data, and build a foundation for the design.",
+      "To list the entire data model at the beginning.",
+      "To choose complex names for the entities."
+    ],
+    "answer": "To define terms, understand the data, and build a foundation for the design.",
+    "explanation": "Identifying core entities helps define the data central to the design and provides a foundation to build upon."
+  },
+  {
+    "question": "When designing an API, which type is generally preferred unless there's a specific need for clients to fetch only requested data?",
+    "options": [
+      "GraphQL API",
+      "RESTful API",
+      "Wire Protocol",
+      "SOAP API"
+    ],
+    "answer": "RESTful API",
+    "explanation": "RESTful APIs are generally preferred due to their simplicity and standard communication constraints of the internet."
+  },
+  {
+    "question": "What is the main purpose of the 'Deep Dives' section in a system design interview?",
+    "options": [
+      "To introduce as much complexity as possible.",
+      "To harden the design by addressing non-functional requirements, edge cases, and potential bottlenecks.",
+      "To talk over the interviewer and demonstrate your expertise.",
+      "To focus solely on the core functional requirements."
+    ],
+    "answer": "To harden the design by addressing non-functional requirements, edge cases, and potential bottlenecks.",
+    "explanation": "The 'Deep Dives' section is used to refine the high-level design by ensuring it meets non-functional requirements and addressing potential issues."
+  },
+  {
+    "question": "What is horizontal scaling?",
+    "options": [
+      "Adding more resources to a single machine.",
+      "Adding more machines to a system to increase its capacity.",
+      "Optimizing code for better performance.",
+      "Reducing the number of users on a system."
+    ],
+    "answer": "Adding more machines to a system to increase its capacity.",
+    "explanation": "Horizontal scaling involves adding more machines to a system to distribute the load and increase capacity."
+  },
+  {
+    "question": "According to the CAP Theorem, what two properties can a distributed system primarily guarantee?",
+    "options": [
+      "Consistency and Performance",
+      "Availability and Speed",
+      "Consistency and Availability (when partition tolerance is a given)",
+      "Partition Tolerance and Speed"
+    ],
+    "answer": "Consistency and Availability (when partition tolerance is a given)",
+    "explanation": "The CAP theorem states that a distributed system can only guarantee two out of three properties: Consistency, Availability, and Partition Tolerance. Since partition tolerance is generally a given, the choice is usually between consistency and availability."
+  },
+  {
+    "question": "Which of the following is an example of a functional requirement?",
+    "options": [
+      "The system should be highly available.",
+      "The system should be able to scale to support 100M+ DAUs.",
+      "Users should be able to post tweets.",
+      "The system should have low latency."
+    ],
+    "answer": "Users should be able to post tweets.",
+    "explanation": "Functional requirements describe what the system *does*, focusing on user-centric features like posting tweets."
+  },
+  {
+    "question": "What does the CAP theorem state?",
+    "options": [
+      "You can only have all three of Consistency, Availability, and Partition Tolerance in a distributed system.",
+      "You can only have two of Consistency, Availability, and Partition Tolerance in a distributed system.",
+      "Consistency, Availability, and Partition Tolerance are not important in distributed systems.",
+      "Consistency is always more important than Availability."
+    ],
+    "answer": "You can only have two of Consistency, Availability, and Partition Tolerance in a distributed system.",
+    "explanation": "The CAP theorem is a fundamental concept in distributed systems that states you can only have two of three properties: Consistency, Availability, and Partition tolerance."
+  },
+  {
+    "question": "What is the purpose of a load balancer?",
+    "options": [
+      "To store data in a database.",
+      "To distribute work across multiple machines.",
+      "To encrypt data in transit.",
+      "To monitor system performance."
+    ],
+    "answer": "To distribute work across multiple machines.",
+    "explanation": "A load balancer distributes incoming requests across multiple servers to prevent overloading any single server."
+  },
+  {
+    "question": "What is an inverted index used for in search optimized databases?",
+    "options": [
+      "To store data in a sorted order.",
+      "To map from words to the documents that contain them.",
+      "To encrypt data for security.",
+      "To compress data for storage efficiency."
+    ],
+    "answer": "To map from words to the documents that contain them.",
+    "explanation": "Inverted indexes are used to quickly find documents that contain a given word, making search queries fast and efficient."
+  },
+  {
+    "question": "What is the primary responsibility of an API gateway?",
+    "options": [
+      "Storing user session data.",
+      "Routing incoming requests to the appropriate backend service.",
+      "Managing database connections.",
+      "Caching static content."
+    ],
+    "answer": "Routing incoming requests to the appropriate backend service.",
+    "explanation": "An API gateway sits in front of your system and is responsible for routing incoming requests to the appropriate backend service."
+  },
+  {
+    "question": "What is the main purpose of using queues in a system?",
+    "options": [
+      "To encrypt data for security.",
+      "To provide a direct connection between client and server.",
+      "To smooth out the load on the system and decouple components.",
+      "To store data in a relational database."
+    ],
+    "answer": "To smooth out the load on the system and decouple components.",
+    "explanation": "Queues serve as buffers for bursty traffic or as a means of distributing work across a system, decoupling the producer and consumer."
+  },
+  {
+    "question": "What is event sourcing?",
+    "options": [
+      "A technique where changes in application state are stored as a sequence of events.",
+      "A method for encrypting data in transit.",
+      "A way to optimize database queries.",
+      "A strategy for load balancing traffic across multiple servers."
+    ],
+    "answer": "A technique where changes in application state are stored as a sequence of events.",
+    "explanation": "Event sourcing is a technique where changes in application state are stored as a sequence of events, which can be replayed to reconstruct the application's state at any point in time."
+  },
+  {
+    "question": "What is a CDN primarily used for?",
+    "options": [
+      "Storing large amounts of unstructured data.",
+      "Delivering content to users based on their geographic location.",
+      "Managing user authentication and authorization.",
+      "Performing complex calculations on data."
+    ],
+    "answer": "Delivering content to users based on their geographic location.",
+    "explanation": "A content delivery network (CDN) uses distributed servers to deliver content to users based on their geographic location, reducing latency."
+  },
+  {
+    "question": "What is the primary goal of the 'Requirements' section in a system design interview?",
+    "options": [
+      "To impress the interviewer with your knowledge of the system.",
+      "To get a clear understanding of the system you are being asked to design.",
+      "To list as many features as possible for the system.",
+      "To perform back-of-the-envelope calculations."
+    ],
+    "answer": "To get a clear understanding of the system you are being asked to design.",
+    "explanation": "The 'Requirements' section focuses on understanding the system's functionality and qualities through functional and non-functional requirements."
+  },
+  {
+    "question": "What are functional requirements?",
+    "options": [
+      "Statements about the system's qualities.",
+      "Statements about what users/clients should be able to do.",
+      "Constraints on the environment in which the system will run.",
+      "Estimations of the system's capacity."
+    ],
+    "answer": "Statements about what users/clients should be able to do.",
+    "explanation": "Functional requirements define the core features of the system from the user's perspective, such as 'Users should be able to post tweets'."
+  },
+  {
+    "question": "What is the recommendation regarding capacity estimation during the initial 'Requirements' phase?",
+    "options": [
+      "Always perform detailed back-of-the-envelope calculations.",
+      "Skip estimations upfront unless they directly influence the design.",
+      "Estimate storage, DAU, and QPS to demonstrate arithmetic skills.",
+      "Focus solely on non-functional requirements."
+    ],
+    "answer": "Skip estimations upfront unless they directly influence the design.",
+    "explanation": "The guide suggests skipping initial estimations unless they are crucial for making design decisions, focusing on relevant calculations later in the process."
+  },
+  {
+    "question": "What is the purpose of identifying 'Core Entities' in system design?",
+    "options": [
+      "To list the entire data model of the system.",
+      "To define terms, understand the data central to the design, and build a foundation.",
+      "To impress the interviewer with your data modeling skills.",
+      "To finalize the database schema."
+    ],
+    "answer": "To define terms, understand the data central to the design, and build a foundation.",
+    "explanation": "Identifying core entities helps define the key data elements that the API will exchange and the system will persist, providing a foundation for the design."
+  },
+  {
+    "question": "When designing an API, what type of API is generally recommended?",
+    "options": [
+      "GraphQL API",
+      "RESTful API",
+      "Wire Protocol",
+      "SOAP API"
+    ],
+    "answer": "RESTful API",
+    "explanation": "The guide recommends biasing toward creating a REST API due to its standard communication constraints and ease of use."
+  },
+  {
+    "question": "According to the CAP theorem, what two properties can a distributed system primarily guarantee?",
+    "options": [
+      "Consistency and Performance",
+      "Availability and Speed",
+      "Consistency and Availability",
+      "Availability and Partition tolerance"
+    ],
+    "answer": "Consistency and Availability",
+    "explanation": "The CAP theorem states that a distributed system can only guarantee two out of three properties: Consistency, Availability, and Partition tolerance (where partition tolerance is a given)."
+  },
+  {
+    "question": "What is the purpose of indexing?",
+    "options": [
+      "To make writes faster.",
+      "To make data faster to query.",
+      "To reduce the amount of storage space required.",
+      "To encrypt the data."
+    ],
+    "answer": "To make data faster to query.",
+    "explanation": "Indexing creates data structures that speed up read operations by minimizing the amount of data that needs to be scanned."
+  },
+  {
+    "question": "What is the primary function of an API Gateway in a microservice architecture?",
+    "options": [
+      "To manage the database connections.",
+      "To route incoming requests to the appropriate backend service.",
+      "To handle the user interface.",
+      "To store static assets."
+    ],
+    "answer": "To route incoming requests to the appropriate backend service.",
+    "explanation": "An API gateway acts as a central point of contact for clients, routing requests to the correct backend services and handling cross-cutting concerns."
+  },
+  {
+    "question": "What is the main purpose of a queue in system design?",
+    "options": [
+      "To provide a direct connection between two services.",
+      "To serve as a buffer for bursty traffic and distribute work across a system.",
+      "To store data in memory for fast access.",
+      "To encrypt data in transit."
+    ],
+    "answer": "To serve as a buffer for bursty traffic and distribute work across a system.",
+    "explanation": "Queues smooth out the load on the system by buffering requests and decoupling the producer and consumer, allowing for independent scaling."
+  }
+]
