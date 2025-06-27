@@ -19,8 +19,9 @@ if (!fs.existsSync(quizzesDir)) fs.mkdirSync(quizzesDir);
 app.use(cors());
 app.use(express.json());
 
+// Add this function near the top of your server/index.js if not present
 const createQuestionId = (questionText) => {
-  return crypto.createHash('sha256').update(questionText).digest('hex');
+  return crypto.createHash('sha256').update(questionText.trim().toLowerCase()).digest('hex').substring(0, 16);
 };
 
 const shuffleArray = (array) => {
@@ -478,6 +479,7 @@ const selectQuestionsWithWeights = (questions, stats, count) => {
 // Add this function for validation
 const SUPPORTED_MODELS = [
   'gemini-2.5-pro',
+  'gemini-2.5-flash',
   'gemini-2.0-flash',
   'gemini-2.0-flash-lite'
 ];
@@ -493,6 +495,85 @@ const getGeminiModel = () => {
   console.log(`Using Gemini model: ${model}`);
   return model;
 };
+
+app.get('/api/topics/stats', (req, res) => {
+  try {
+    let stats = {};
+    let topicStats = {};
+
+    // Load general stats
+    if (fs.existsSync(statsFilePath)) {
+      stats = JSON.parse(fs.readFileSync(statsFilePath, 'utf8'));
+    }
+
+    // Calculate stats for each topic by analyzing quiz results
+    const files = fs.readdirSync(quizzesDir);
+    
+    files.forEach(file => {
+      if (file.endsWith('-quiz.json')) {
+        const topicId = file.replace('-quiz.json', '');
+        const topicName = topicId.split('-').map(word => 
+          word.charAt(0).toUpperCase() + word.slice(1)
+        ).join(' ');
+        
+        try {
+          const questions = JSON.parse(fs.readFileSync(path.join(quizzesDir, file), 'utf8'));
+          
+          // Initialize topic stats
+          topicStats[topicId] = {
+            id: topicId,
+            name: topicName,
+            questionCount: questions.length,
+            totalAttempts: 0,
+            correctAnswers: 0,
+            accuracy: 0,
+            averageWeight: 0,
+            needsFocus: false
+          };
+
+          // Calculate stats from question weights and performance
+          let totalWeight = 0;
+          let questionsWithStats = 0;
+          
+          questions.forEach(q => {
+            const questionId = createQuestionId(q.question);
+            if (stats[questionId]) {
+              const qStats = stats[questionId];
+              topicStats[topicId].totalAttempts += qStats.seen || 0;
+              topicStats[topicId].correctAnswers += qStats.correct || 0;
+              totalWeight += qStats.weight || 1;
+              questionsWithStats++;
+            } else {
+              totalWeight += 1; // Default weight for new questions
+            }
+          });
+
+          if (topicStats[topicId].totalAttempts > 0) {
+            topicStats[topicId].accuracy = Math.round(
+              (topicStats[topicId].correctAnswers / topicStats[topicId].totalAttempts) * 100
+            );
+          }
+
+          if (questions.length > 0) {
+            topicStats[topicId].averageWeight = Math.round((totalWeight / questions.length) * 100) / 100;
+          }
+
+          // Determine if topic needs focus (low accuracy or high average weight)
+          topicStats[topicId].needsFocus = 
+            topicStats[topicId].accuracy < 70 || topicStats[topicId].averageWeight > 1.5;
+            
+        } catch (error) {
+          console.error(`Error processing ${file}:`, error);
+        }
+      }
+    });
+
+    res.json(Object.values(topicStats));
+  } catch (error) {
+    console.error('Error getting topic stats:', error);
+    res.status(500).json({ message: 'Failed to get topic statistics' });
+  }
+});
 
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);

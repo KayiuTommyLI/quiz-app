@@ -14,7 +14,8 @@ const App = () => {
   const [topics, setTopics] = useState([]);
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [currentView, setCurrentView] = useState('topics'); // 'topics', 'menu', 'quiz', 'score'
-  
+  const [topicStats, setTopicStats] = useState([]);
+
   // Effect to fetch total question count for the menu
   useEffect(() => {
     if (view === 'menu') {
@@ -40,15 +41,22 @@ const App = () => {
     }
   }, [view]);
 
-  // Add this effect to load topics
+  // Effect to load topics and stats
   useEffect(() => {
     if (currentView === 'topics') {
       setIsLoading(true);
-      fetch('http://localhost:3001/api/topics')
-        .then(res => res.json())
-        .then(data => setTopics(data || []))
-        .catch(err => console.error('Failed to load topics:', err))
-        .finally(() => setIsLoading(false));
+      
+      // Load both topics and stats
+      Promise.all([
+        fetch('http://localhost:3001/api/topics').then(res => res.json()),
+        fetch('http://localhost:3001/api/topics/stats').then(res => res.json())
+      ])
+      .then(([topicsData, statsData]) => {
+        setTopics(topicsData || []);
+        setTopicStats(statsData || []);
+      })
+      .catch(err => console.error('Failed to load topics/stats:', err))
+      .finally(() => setIsLoading(false));
     }
   }, [currentView]);
 
@@ -178,29 +186,54 @@ const App = () => {
     }
   };
 
-  const handleGenerateTopicQuiz = async () => {
-    if (!selectedTopic) return;
+  const handleGenerateTopicQuiz = async (topicToGenerate = null) => {
+    // Use the passed topic or fall back to selectedTopic
+    const targetTopic = topicToGenerate || selectedTopic;
+    
+    if (!targetTopic) {
+      console.error('No topic specified for question generation');
+      return;
+    }
     
     setIsLoading(true);
-    setStatusMessage(`Generating questions for ${selectedTopic.name}...`);
+    setStatusMessage(`Generating questions for ${targetTopic.name}...`);
     try {
-      const response = await fetch(`http://localhost:3001/api/quizzes/${selectedTopic.id}`, { 
+      const response = await fetch(`http://localhost:3001/api/quizzes/${targetTopic.id}`, { 
         method: 'POST' 
       });
       const data = await response.json();
       
       if (response.status === 429) {
         setStatusMessage('API rate limit exceeded. Please wait a few minutes before trying again.');
-        return;
+        // FIX: Don't return early here, let it go to finally block
+      } else if (!response.ok) {
+        throw new Error(data.message || 'Failed to generate quiz.');
+      } else {
+        // Success case
+        alert(`Generated ${data.newQuestions || data.questions} questions for ${targetTopic.name}!`);
+        
+        // Refresh the topics to show updated question counts
+        const topicsResponse = await fetch('http://localhost:3001/api/topics');
+        if (topicsResponse.ok) {
+          const updatedTopics = await topicsResponse.json();
+          setTopics(updatedTopics || []);
+        }
+        
+        // Also refresh the stats
+        const statsResponse = await fetch('http://localhost:3001/api/topics/stats');
+        if (statsResponse.ok) {
+          const updatedStats = await statsResponse.json();
+          setTopicStats(updatedStats || []);
+        }
+        
+        // Clear the status message on success
+        setStatusMessage('');
       }
       
-      if (!response.ok) throw new Error(data.message || 'Failed to generate quiz.');
-      
-      alert(`Generated ${data.questions} questions for ${selectedTopic.name}!`);
-      setCurrentView('topics'); // Go back to topics to refresh counts
     } catch (err) {
       setStatusMessage(err.message);
     } finally {
+      // FIX: Always clear loading state
       setIsLoading(false);
     }
   };
@@ -245,6 +278,33 @@ const App = () => {
     }
   };
 
+  // Helper function to get stats for a topic
+  const getTopicStats = (topicId) => {
+    return topicStats.find(stat => stat.id === topicId) || {
+      totalAttempts: 0,
+      accuracy: 0,
+      averageWeight: 1,
+      needsFocus: false
+    };
+  };
+
+  // Helper function to get performance badge
+  const getPerformanceBadge = (stats) => {
+    if (stats.totalAttempts === 0) {
+      return <span className="inline-block px-2 py-1 text-xs rounded bg-gray-200 text-gray-600">Not Attempted</span>;
+    }
+    
+    if (stats.needsFocus) {
+      return <span className="inline-block px-2 py-1 text-xs rounded bg-red-200 text-red-700">⚠️ Needs Focus</span>;
+    }
+    
+    if (stats.accuracy >= 80) {
+      return <span className="inline-block px-2 py-1 text-xs rounded bg-green-200 text-green-700">✅ Strong</span>;
+    }
+    
+    return <span className="inline-block px-2 py-1 text-xs rounded bg-yellow-200 text-yellow-700">📈 Improving</span>;
+  };
+
   // Update your topics view to properly set the selected topic before generating
   if (currentView === 'topics') {
     return (
@@ -254,7 +314,7 @@ const App = () => {
           Choose a topic to focus your study session, or review all topics together.
         </p>
         
-        <div className="w-full max-w-2xl space-y-4">
+        <div className="w-full max-w-4xl space-y-4">
           {/* All Topics Review Button */}
           <button
             onClick={handleStartAllTopicsReview}
@@ -265,39 +325,111 @@ const App = () => {
             <div className="text-sm opacity-90">Smart review from your entire question bank</div>
           </button>
           
-          {/* Topic Cards */}
+          {/* Topics with Stats */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {topics.map((topic) => (
-              <div key={topic.id} className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">{topic.name}</h3>
-                <p className="text-gray-600 mb-4">
-                  {topic.questionCount} questions available
-                </p>
-                <div className="space-y-2">
-                  <button
-                    onClick={() => handleTopicSelect(topic)}
-                    disabled={isLoading}
-                    className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                  >
-                    Study This Topic
-                  </button>
-                  {topic.questionCount === 0 && (
+            {topics.map((topic) => {
+              const stats = getTopicStats(topic.id);
+              return (
+                <div 
+                  key={topic.id} 
+                  className={`bg-white rounded-lg shadow-md p-6 border-2 transition-all ${
+                    stats.needsFocus ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="text-xl font-semibold text-gray-800">{topic.name}</h3>
+                    {getPerformanceBadge(stats)}
+                  </div>
+                  
+                  <div className="space-y-2 mb-4">
+                    <p className="text-gray-600">
+                      <span className="font-medium">{topic.questionCount}</span> questions available
+                    </p>
+                    
+                    {stats.totalAttempts > 0 && (
+                      <>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Accuracy:</span>
+                          <span className={`font-medium ${
+                            stats.accuracy >= 80 ? 'text-green-600' : 
+                            stats.accuracy >= 60 ? 'text-yellow-600' : 'text-red-600'
+                          }`}>
+                            {stats.accuracy}%
+                          </span>
+                        </div>
+                        
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Questions Attempted:</span>
+                          <span className="font-medium text-gray-700">{stats.totalAttempts}</span>
+                        </div>
+                        
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Focus Weight:</span>
+                          <span className={`font-medium ${
+                            stats.averageWeight > 1.5 ? 'text-red-600' : 
+                            stats.averageWeight > 1.2 ? 'text-yellow-600' : 'text-green-600'
+                          }`}>
+                            {stats.averageWeight}x
+                          </span>
+                        </div>
+                        
+                        {/* Progress bar for accuracy */}
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className={`h-2 rounded-full transition-all duration-300 ${
+                              stats.accuracy >= 80 ? 'bg-green-500' : 
+                              stats.accuracy >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                            }`}
+                            style={{ width: `${Math.max(stats.accuracy, 5)}%` }}
+                          ></div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2">
                     <button
-                      onClick={() => {
-                        // FIX: Set the selected topic BEFORE calling generate
-                        setSelectedTopic(topic);
-                        handleGenerateTopicQuiz();
-                      }}
+                      onClick={() => handleTopicSelect(topic)}
+                      disabled={isLoading || topic.questionCount === 0}
+                      className={`w-full px-4 py-2 rounded-lg transition-colors ${
+                        stats.needsFocus 
+                          ? 'bg-red-600 hover:bg-red-700 text-white font-medium' 
+                          : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                      } disabled:bg-gray-400`}
+                    >
+                      {stats.needsFocus ? '🎯 Priority Study' : 'Study This Topic'}
+                    </button>
+                    
+                    <button
+                      onClick={() => handleGenerateTopicQuiz(topic)}
                       disabled={isLoading}
                       className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
                     >
-                      Generate Questions
+                      {topic.questionCount === 0 ? 'Generate Questions' : 'Generate More Questions'}
                     </button>
-                  )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
+          
+          {/* Focus Summary */}
+          {topicStats.length > 0 && (
+            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <h3 className="font-semibold text-blue-800 mb-2">📊 Study Focus Recommendations:</h3>
+              <div className="text-sm text-blue-700">
+                {topicStats.filter(s => s.needsFocus).length > 0 ? (
+                  <p>
+                    Topics needing attention: <strong>
+                      {topicStats.filter(s => s.needsFocus).map(s => s.name).join(', ')}
+                    </strong>
+                  </p>
+                ) : (
+                  <p>Great job! All attempted topics are performing well. 🎉</p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
         
         {statusMessage && <p className="mt-4 text-red-500">{statusMessage}</p>}
@@ -336,7 +468,7 @@ const App = () => {
                 Start Topic Review (10 Questions)
               </button>
               <button
-                onClick={handleGenerateTopicQuiz}
+                onClick={() => handleGenerateTopicQuiz(selectedTopic)}
                 disabled={isLoading}
                 className="w-full px-8 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition-transform transform hover:scale-105"
               >
