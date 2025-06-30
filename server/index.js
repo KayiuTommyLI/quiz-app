@@ -85,7 +85,7 @@ Here is the text:\n\n---\n\n`;
   const fullInput = promptInstructions + combinedContent;
   const tempFilePath = path.join(os.tmpdir(), `gemini-prompt-${Date.now()}.txt`);
   fs.writeFileSync(tempFilePath, fullInput, 'utf-8');
-  const command = `gemini --model gemini-2.0-flash < "${tempFilePath}"`;
+  const command = `gemini --model ${getGeminiModel()} < "${tempFilePath}"`;
   
   exec(command, { maxBuffer: 1024 * 1024 * 10, env: process.env }, (error, stdout, stderr) => {
     fs.unlinkSync(tempFilePath);
@@ -293,7 +293,7 @@ Here is the text:\n\n---\n\n`;
     
     const tempFilePath = path.join(os.tmpdir(), `gemini-prompt-${Date.now()}.txt`);
     fs.writeFileSync(tempFilePath, fullInput, 'utf-8');
-    const command = `gemini --model gemini-2.0-flash < "${tempFilePath}"`;
+    const command = `gemini --model ${getGeminiModel()} < "${tempFilePath}"`;
     
     exec(command, { maxBuffer: 1024 * 1024 * 10, env: process.env }, (error, stdout, stderr) => {
       fs.unlinkSync(tempFilePath);
