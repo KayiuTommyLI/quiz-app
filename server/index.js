@@ -68,16 +68,35 @@ app.post('/api/quizzes', async (req, res) => {
   }
 
   // Update the prompt to be more specific about generating different questions
-  const promptInstructions = `Based on the following text, generate 10 NEW and DIFFERENT multiple choice questions and answers in a valid JSON array format. 
+  const promptInstructions = `Based on the following text, generate 10 NEW and DIFFERENT multiple choice questions and answers in a valid JSON array format.
 
-IMPORTANT: Make these questions UNIQUE and cover DIFFERENT aspects, concepts, and details from the material. Focus on:
+**JSON Structure Requirements:**
+Each object in the array must have the following keys: "question", "options", "answer", and "explanation".
+- "question": A string containing the question text.
+- "options": An array of 4 strings representing the multiple-choice options.
+- "answer": A string containing the **full text** of the correct option. This value **must exactly match** one of the strings in the "options" array. Do NOT use a letter like "A" or "B" or "C" or "D".
+- "explanation": A string explaining why the answer is correct, referencing the source text if possible.
+
+**Example of a single JSON object:**
+{
+  "question": "What is the primary purpose of a load balancer?",
+  "options": [
+    "To encrypt data traffic",
+    "To distribute incoming network traffic across multiple servers",
+    "To store user session data",
+    "To cache static content"
+  ],
+  "answer": "To distribute incoming network traffic across multiple servers",
+  "explanation": "A load balancer acts as a reverse proxy and distributes network or application traffic across a number of servers to improve reliability and capacity."
+}
+
+**Question Generation Guidelines:**
+Make the questions UNIQUE and cover DIFFERENT aspects, concepts, and details from the material. Focus on:
 - Different technical concepts
-- Various implementation details  
+- Various implementation details
 - Different scenarios and use cases
 - Alternative approaches mentioned
 - Specific examples and edge cases
-
-Each object should have "question", "options", "answer", and "explanation" keys.
 
 Current timestamp for uniqueness: ${Date.now()}
 
@@ -275,16 +294,35 @@ app.post('/api/quizzes/:topicId', async (req, res) => {
       return res.status(400).json({ message: 'No readable content found in topic folder' });
     }
     
-    const promptInstructions = `Based on the following text, generate 10 NEW and DIFFERENT multiple choice questions and answers in a valid JSON array format. 
+    const promptInstructions = `Based on the following text, generate 10 NEW and DIFFERENT multiple choice questions and answers in a valid JSON array format.
 
-IMPORTANT: Make these questions UNIQUE and cover DIFFERENT aspects, concepts, and details from the material. Focus on:
+**JSON Structure Requirements:**
+Each object in the array must have the following keys: "question", "options", "answer", and "explanation".
+- "question": A string containing the question text.
+- "options": An array of 4 strings representing the multiple-choice options.
+- "answer": A string containing the **full text** of the correct option. This value **must exactly match** one of the strings in the "options" array. Do NOT use a letter like "A" or "B".
+- "explanation": A string explaining why the answer is correct, referencing the source text if possible.
+
+**Example of a single JSON object:**
+{
+  "question": "What is the primary purpose of a load balancer?",
+  "options": [
+    "To encrypt data traffic",
+    "To distribute incoming network traffic across multiple servers",
+    "To store user session data",
+    "To cache static content"
+  ],
+  "answer": "To distribute incoming network traffic across multiple servers",
+  "explanation": "A load balancer acts as a reverse proxy and distributes network or application traffic across a number of servers to improve reliability and capacity."
+}
+
+**Question Generation Guidelines:**
+Make the questions UNIQUE and cover DIFFERENT aspects, concepts, and details from the material. Focus on:
 - Different technical concepts
-- Various implementation details  
+- Various implementation details
 - Different scenarios and use cases
 - Alternative approaches mentioned
 - Specific examples and edge cases
-
-Each object should have "question", "options", "answer", and "explanation" keys.
 
 Current timestamp for uniqueness: ${Date.now()}
 
