@@ -8,16 +8,28 @@ const cors = require('cors');
 const pdf = require('pdf-parse');
 const crypto = require('crypto');
 
+console.log('=== PATH DEBUG ===');
+console.log('__dirname:', __dirname);
+console.log('process.cwd():', process.cwd());
+console.log('quizzesDir:', path.join(__dirname, '..', 'quizzes'));
+console.log('study_materials:', path.join(__dirname, '..', 'study_materials'));
+console.log('==================');
+
 const app = express();
 const port = 3001;
 
 const quizzesDir = path.join(__dirname, '..', 'quizzes');
 const statsFilePath = path.join(__dirname, '..', 'quizzes', 'stats.json');
 
+console.log('Final quizzesDir path:', quizzesDir);
+console.log('statsFilePath:', statsFilePath);
+
 if (!fs.existsSync(quizzesDir)) fs.mkdirSync(quizzesDir);
 
 app.use(cors());
 app.use(express.json());
+
+const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
 
 // Add this function near the top of your server/index.js if not present
 const createQuestionId = (questionText) => {
@@ -234,6 +246,7 @@ app.post('/api/quizzes/consolidate', (req, res) => {
     res.status(500).send('Error consolidating question bank.');
   }
 });
+
 
 app.post('/api/stats', (req, res) => {
     const results = req.body.results;
@@ -525,6 +538,7 @@ const SUPPORTED_MODELS = [
 const getGeminiModel = () => {
   const model = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
   
+  // Validate that the model is supported
   if (!SUPPORTED_MODELS.includes(model)) {
     console.warn(`Warning: Model '${model}' may not be supported. Using default: ${DEFAULT_GEMINI_MODEL}`);
     return DEFAULT_GEMINI_MODEL;
@@ -533,6 +547,12 @@ const getGeminiModel = () => {
   console.log(`Using Gemini model: ${model}`);
   return model;
 };
+
+// Add environment validation at startup:
+if (!process.env.GEMINI_API_KEY) {
+  console.error('ERROR: GEMINI_API_KEY environment variable is required');
+  process.exit(1);
+}
 
 app.get('/api/topics/stats', (req, res) => {
   try {
@@ -579,7 +599,12 @@ app.get('/api/topics/stats', (req, res) => {
               const qStats = stats[questionId];
               topicStats[topicId].totalAttempts += qStats.seen || 0;
               topicStats[topicId].correctAnswers += qStats.correct || 0;
-              totalWeight += qStats.weight || 1;
+              // FIX: Add fallback values and ensure no division errors
+              const incorrect = qStats.incorrect || 0;
+              const correct = qStats.correct || 0;
+              const seen = qStats.seen || 0;
+              const weight = 1 + (incorrect * 2) - (correct * 0.5) + (1 / (seen + 1));
+              totalWeight += Math.max(0.1, weight);
               questionsWithStats++;
             } else {
               totalWeight += 1; // Default weight for new questions
@@ -612,6 +637,44 @@ app.get('/api/topics/stats', (req, res) => {
     res.status(500).json({ message: 'Failed to get topic statistics' });
   }
 });
+
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'API is working!', timestamp: new Date().toISOString() });
+});
+
+// Serve static files and React app in production
+const publicPath = path.join(__dirname, 'public');
+console.log('Checking for public directory at:', publicPath);
+console.log('Public directory exists:', fs.existsSync(publicPath));
+
+if (fs.existsSync(publicPath)) {
+  console.log('Production mode: Serving static files from public directory');
+  app.use(express.static(publicPath));
+  
+  // Express 5.0 compatible catchall route
+  app.get(/.*/, (req, res) => {
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({ message: 'API endpoint not found' });
+    }
+    console.log('Serving React app for path:', req.path);
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  });
+} else {
+  console.log('Public directory not found - API only mode');
+  app.get('/', (req, res) => {
+    res.json({ 
+      message: 'Quiz App API Server is running!',
+      mode: 'API only - no frontend files found',
+      endpoints: [
+        'GET /api/test',
+        'GET /api/topics',
+        'GET /api/topics/stats', 
+        'GET /api/quizzes/all',
+        'GET /api/quizzes/count'
+      ]
+    });
+  });
+}
 
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);

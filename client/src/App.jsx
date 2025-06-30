@@ -21,7 +21,7 @@ const App = () => {
     if (view === 'menu') {
       setIsLoading(true);
       setStatusMessage('');
-      fetch('http://localhost:3001/api/quizzes/count')
+      fetch('/api/quizzes/count')
         .then(res => res.json())
         .then(data => setTotalQuestionsInBank(data.count || 0))
         .catch(() => setTotalQuestionsInBank(0))
@@ -32,7 +32,7 @@ const App = () => {
   // Effect to post quiz results when the user reaches the score screen
   useEffect(() => {
     if (view === 'score' && quizResults.length > 0) {
-      fetch('http://localhost:3001/api/stats', {
+      fetch('/api/stats', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ results: quizResults }),
@@ -48,8 +48,8 @@ const App = () => {
       
       // Load both topics and stats
       Promise.all([
-        fetch('http://localhost:3001/api/topics').then(res => res.json()),
-        fetch('http://localhost:3001/api/topics/stats').then(res => res.json())
+        fetch('/api/topics').then(res => res.json()),
+        fetch('/api/topics/stats').then(res => res.json())
       ])
       .then(([topicsData, statsData]) => {
         setTopics(topicsData || []);
@@ -64,7 +64,7 @@ const App = () => {
     setIsLoading(true);
     setStatusMessage('Generating new questions...');
     try {
-      const response = await fetch('http://localhost:3001/api/quizzes', { method: 'POST' });
+      const response = await fetch('/api/quizzes', { method: 'POST' });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to generate quiz.');
       alert('New quiz generated and added to your question bank!');
@@ -80,7 +80,7 @@ const App = () => {
     setIsLoading(true);
     setStatusMessage('Building your smart review...');
     try {
-      const response = await fetch('http://localhost:3001/api/quizzes/all');
+      const response = await fetch('/api/quizzes/all');
       if (!response.ok) throw new Error('Could not load the quiz.');
       const questionsData = await response.json();
       if (questionsData.length === 0) {
@@ -110,7 +110,7 @@ const App = () => {
     setIsLoading(true);
     setStatusMessage('Consolidating...');
     try {
-      const response = await fetch('http://localhost:3001/api/quizzes/consolidate', { method: 'POST' });
+      const response = await fetch('/api/quizzes/consolidate', { method: 'POST' });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to consolidate.');
       alert(data.message);
@@ -163,7 +163,7 @@ const App = () => {
     setIsLoading(true);
     setStatusMessage('Building your smart review from all topics...');
     try {
-      const response = await fetch('http://localhost:3001/api/quizzes/all');
+      const response = await fetch('/api/quizzes/all');
       if (!response.ok) throw new Error('Could not load the quiz.');
       const questionsData = await response.json();
       if (questionsData.length === 0) {
@@ -198,7 +198,7 @@ const App = () => {
     setIsLoading(true);
     setStatusMessage(`Generating questions for ${targetTopic.name}...`);
     try {
-      const response = await fetch(`http://localhost:3001/api/quizzes/${targetTopic.id}`, { 
+      const response = await fetch(`/api/quizzes/${targetTopic.id}`, { 
         method: 'POST' 
       });
       const data = await response.json();
@@ -213,14 +213,14 @@ const App = () => {
         alert(`Generated ${data.newQuestions || data.questions} questions for ${targetTopic.name}!`);
         
         // Refresh the topics to show updated question counts
-        const topicsResponse = await fetch('http://localhost:3001/api/topics');
+        const topicsResponse = await fetch('/api/topics');
         if (topicsResponse.ok) {
           const updatedTopics = await topicsResponse.json();
           setTopics(updatedTopics || []);
         }
         
         // Also refresh the stats
-        const statsResponse = await fetch('http://localhost:3001/api/topics/stats');
+        const statsResponse = await fetch('/api/topics/stats');
         if (statsResponse.ok) {
           const updatedStats = await statsResponse.json();
           setTopicStats(updatedStats || []);
@@ -244,7 +244,7 @@ const App = () => {
     setIsLoading(true);
     setStatusMessage(`Loading ${selectedTopic.name} quiz...`);
     try {
-      const response = await fetch(`http://localhost:3001/api/quizzes/${selectedTopic.id}`);
+      const response = await fetch(`/api/quizzes/${selectedTopic.id}`);
       if (!response.ok) throw new Error('Could not load the quiz.');
       
       const questionsData = await response.json();

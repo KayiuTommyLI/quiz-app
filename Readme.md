@@ -53,72 +53,99 @@ A sophisticated quiz application that automatically generates multiple-choice qu
 
 ## 🚀 Getting Started
 
+This section provides instructions for deploying the application using Docker (recommended) or running it locally for development.
+
 ### Prerequisites
 
-- Node.js (v14 or higher)
-- Google Gemini API key
-- Gemini CLI tool
+-   **For Docker:** [Docker](https://www.docker.com/products/docker-desktop/) and [Docker Compose](https://docs.docker.com/compose/install/).
+-   **For Local Development:** [Node.js](https://nodejs.org/en/) (v18 or higher).
+-   A **Google Account** to authenticate the Gemini CLI.
 
-### Installation
+### 🐳 Docker Deployment (Recommended Method)
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd quiz-app
-   ```
+This is the easiest and most reliable way to run the application on any server or NAS.
 
-2. **Install dependencies**
-   ```bash
-   # Install server dependencies
-   cd server
-   npm install
+1.  **Clone the Repository**
+    ```bash
+    git clone <your-repository-url>
+    cd quiz-app
+    ```
 
-   # Install client dependencies
-   cd ../client
-   npm install
-   ```
+2.  **Create `.env` File**
+    Create a `.env` file in the project root and add your Gemini API Key. See the [Configuration](#️-configuration) section above for more details.
+    ```bash
+    echo "GEMINI_API_KEY=YOUR_API_KEY_HERE" > .env
+    ```
 
-3. **Install Gemini CLI**
-   ```bash
-   npm install -g @google/gemini-cli
-   ```
+3.  **Create Data Directories**
+    These folders will be mounted into the container to store your study materials and the generated quizzes.
+    ```bash
+    mkdir quizzes
+    mkdir study_materials
+    ```
 
-4. **Set up environment variables**
-   ```bash
-   # In the server directory, create .env file
-   GEMINI_API_KEY=your_gemini_api_key_here
-   ```
+4.  **Add Your Study Materials**
+    Place your study documents (`.txt` or `.pdf`) inside the `study_materials` directory. Create a sub-folder for each topic.
+    ```
+    study_materials/
+    └── history/
+        ├── chapter1.pdf
+        └── notes.txt
+    ```
 
-5. **Organize your study materials**
-   ```
-   study_materials/
-   ├── core-concepts/
-   │   ├── concepts.txt
-   │   └── advanced.pdf
-   ├── delivery-framework/
-   │   └── framework.txt
-   ├── key-technologies/
-   │   └── tech-stack.pdf
-   └── common-patterns/
-       └── patterns.txt
-   ```
+5.  **Build and Run with Docker Compose**
+    This single command builds the Docker image and starts the application in the background.
+    ```bash
+    docker-compose up -d --build
+    ```
 
-### Running the Application
+6.  **Access the Application**
+    Open your web browser and navigate to `http://<your-server-ip>:3001`.
 
-1. **Start the server**
-   ```bash
-   cd server
-   node index.js
-   ```
+> ### ⚠️ Important: Gemini Regional Restrictions
+> The Gemini API and CLI are not available in all regions (e.g., Hong Kong, parts of Europe). If you encounter a **"User location is not supported"** error, you must configure your server/NAS to use a **VPN** that routes its traffic through a supported country (like the US or UK).
 
-2. **Start the client (in a new terminal)**
-   ```bash
-   cd client
-   npm run dev
-   ```
+### 💻 Local Development Setup
 
-3. **Access the application**
-   Open your browser to `http://localhost:5173`
+Follow these steps to run the frontend and backend servers separately on your local machine.
+
+1.  **Clone & Install Dependencies**
+    ```bash
+    git clone <your-repository-url>
+    cd quiz-app
+
+    # Install server dependencies
+    cd server && npm install
+
+    # Install client dependencies
+    cd ../client && npm install
+    ```
+
+2.  **Install Gemini CLI Globally**
+    The backend uses the Gemini CLI to generate questions.
+    ```bash
+    npm install -g @google/gemini-cli
+    ```
+
+3.  **Start the Backend Server**
+    From the `server` directory:
+    ```bash
+    # The Gemini CLI authenticates with your Google Account, so an API key is not needed.
+    cd server
+    npm run dev
+    ```
+    The backend will be running on `http://localhost:3001`.
+
+4.  **Start the Frontend Server (in a new terminal)**
+    From the `client` directory:
+    ```bash
+    cd client
+    npm run dev
+    ```
+    The frontend will be running on `http://localhost:5173`.
+
+5.  **Access the Application**
+    Open your browser to `http://localhost:5173`. The Vite development server is pre-configured to proxy API requests to the backend.
 
 ## 📁 Project Structure
 
@@ -144,6 +171,32 @@ quiz-app/
 │   └── stats.json         # Performance statistics
 └── screen_cap/            # Application screenshots
 ```
+
+## ⚙️ Configuration
+
+The application is configured using environment variables. Create a `.env` file in the root of the project directory. This file can be used by `docker-compose.yml` to pass configuration into the container.
+
+Create a file named `.env` and add the following variables:
+
+```bash
+# .env
+
+# Your Google Gemini API Key. While the CLI can use Google Account auth,
+# providing a key is recommended for stable performance and higher rate limits.
+GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
+
+# The Gemini model to use for generating questions.
+GEMINI_MODEL="gemini-2.5-flash"
+```
+
+### Environment Variables
+
+| Variable | Description | Default | Required |
+| :--- | :--- | :--- | :--- |
+| `GEMINI_API_KEY` | Your API key from [Google AI Studio](https://aistudio.google.com/app/apikey). | `None` | **Yes** |
+| `GEMINI_MODEL` | The specific Gemini model to use. Options include `gemini-1.5-pro`, `gemini-1.5-flash`, etc. | `gemini-1.5-flash` | No |
+| `NODE_ENV` | Sets the application environment. Automatically set to `production` in Docker. | `production` | No |
+
 
 ## 🔧 API Endpoints
 
