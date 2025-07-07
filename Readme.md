@@ -194,7 +194,7 @@ GEMINI_MODEL="gemini-2.5-flash"
 | Variable | Description | Default | Required |
 | :--- | :--- | :--- | :--- |
 | `GEMINI_API_KEY` | Your API key from [Google AI Studio](https://aistudio.google.com/app/apikey). | `None` | **Yes** |
-| `GEMINI_MODEL` | The specific Gemini model to use. Options include `gemini-1.5-pro`, `gemini-1.5-flash`, etc. | `gemini-1.5-flash` | No |
+| `GEMINI_MODEL` | The specific Gemini model to use. Options include `gemini-2.5-pro`, `gemini-2.5-flash`, etc. | `gemini-2.5-flash` | No |
 | `NODE_ENV` | Sets the application environment. Automatically set to `production` in Docker. | `production` | No |
 
 
