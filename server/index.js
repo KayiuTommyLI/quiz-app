@@ -56,7 +56,21 @@ const shuffleQuestionOptions = (question) => {
   };
 };
 
+// Add this near the top with other configuration
+const DISABLE_GENERATION = process.env.DISABLE_GENERATION === 'true';
+
+console.log('=== CONFIGURATION ===');
+console.log('Generation disabled:', DISABLE_GENERATION);
+console.log('=====================');
+
+// Modify the generation endpoints to check this flag
 app.post('/api/quizzes', async (req, res) => {
+  if (DISABLE_GENERATION) {
+    return res.status(403).json({ 
+      message: 'Question generation is disabled on this server. Use your local development environment to generate questions.' 
+    });
+  }
+  
   if (!process.env.GEMINI_API_KEY) {
     return res.status(500).send('Server configuration error: Missing API Key.');
   }
@@ -272,6 +286,12 @@ app.post('/api/stats', (req, res) => {
 // Generate quiz for specific topic
 app.post('/api/quizzes/:topicId', async (req, res) => {
   const { topicId } = req.params;
+  
+  if (DISABLE_GENERATION) {
+    return res.status(403).json({ 
+      message: 'Question generation is disabled on this server. Use your local development environment to generate questions.' 
+    });
+  }
   
   if (!process.env.GEMINI_API_KEY) {
     return res.status(500).json({ message: 'Server configuration error: Missing API Key.' });

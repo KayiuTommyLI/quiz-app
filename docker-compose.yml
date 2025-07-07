@@ -10,6 +10,7 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash}
       - NODE_ENV=production
+      - DISABLE_GENERATION=true
     volumes:
       - ./quizzes:/app/quizzes
       - ./study_materials:/app/study_materials

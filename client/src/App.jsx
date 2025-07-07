@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 
 const App = () => {
+  // Add new state for configuration
+  const [serverConfig, setServerConfig] = useState({ generationEnabled: true });
+  
   const [view, setView] = useState('menu'); // 'menu', 'quiz', 'score'
   const [questions, setQuestions] = useState([]);
   const [quizResults, setQuizResults] = useState([]);
@@ -59,6 +62,14 @@ const App = () => {
       .finally(() => setIsLoading(false));
     }
   }, [currentView]);
+
+  // Add effect to load server configuration
+  useEffect(() => {
+    fetch('/api/config')
+      .then(res => res.json())
+      .then(config => setServerConfig(config))
+      .catch(err => console.error('Failed to load server config:', err));
+  }, []);
 
   const handleGenerateNewQuiz = async () => {
     setIsLoading(true);
@@ -314,6 +325,13 @@ const App = () => {
           Choose a topic to focus your study session, or review all topics together.
         </p>
         
+        {/* Show mode indicator if generation is disabled */}
+        {!serverConfig.generationEnabled && (
+          <div className="mb-6 p-3 bg-blue-100 border border-blue-300 rounded-lg text-blue-800 text-center">
+            📚 Quiz-only mode: Question generation is disabled on this server
+          </div>
+        )}
+        
         <div className="w-full max-w-4xl space-y-4">
           {/* All Topics Review Button */}
           <button
@@ -400,13 +418,23 @@ const App = () => {
                       {stats.needsFocus ? '🎯 Priority Study' : 'Study This Topic'}
                     </button>
                     
-                    <button
-                      onClick={() => handleGenerateTopicQuiz(topic)}
-                      disabled={isLoading}
-                      className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-                    >
-                      {topic.questionCount === 0 ? 'Generate Questions' : 'Generate More Questions'}
-                    </button>
+                    {/* Conditionally show generation button */}
+                    {serverConfig.generationEnabled && (
+                      <button
+                        onClick={() => handleGenerateTopicQuiz(topic)}
+                        disabled={isLoading}
+                        className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                      >
+                        {topic.questionCount === 0 ? 'Generate Questions' : 'Generate More Questions'}
+                      </button>
+                    )}
+                    
+                    {/* Show message when generation is disabled */}
+                    {!serverConfig.generationEnabled && topic.questionCount === 0 && (
+                      <div className="text-sm text-gray-500 text-center py-2">
+                        No questions available. Generate questions on your local environment.
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -467,13 +495,17 @@ const App = () => {
               >
                 Start Topic Review (10 Questions)
               </button>
-              <button
-                onClick={() => handleGenerateTopicQuiz(selectedTopic)}
-                disabled={isLoading}
-                className="w-full px-8 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition-transform transform hover:scale-105"
-              >
-                Generate More Questions
-              </button>
+              
+              {/* Conditionally show generation button */}
+              {serverConfig.generationEnabled && (
+                <button
+                  onClick={() => handleGenerateTopicQuiz(selectedTopic)}
+                  disabled={isLoading}
+                  className="w-full px-8 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition-transform transform hover:scale-105"
+                >
+                  Generate More Questions
+                </button>
+              )}
             </>
           ) : (
             <button
